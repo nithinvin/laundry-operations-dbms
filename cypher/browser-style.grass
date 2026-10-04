@@ -1,0 +1,78 @@
+node {
+  diameter: 50px;
+  color: #A5ABB6;
+  border-color: #9AA1AC;
+  border-width: 2px;
+  text-color-internal: #FFFFFF;
+  font-size: 10px;
+}
+relationship {
+  color: #A5ABB6;
+  shaft-width: 1px;
+  font-size: 8px;
+  padding: 3px;
+  text-color-external: #000000;
+  text-color-internal: #FFFFFF;
+  caption: "<type>";
+}
+node.Student {
+  color: #4C8EDA;
+  border-color: #2870C2;
+  diameter: 60px;
+  caption: "{studentName}";
+}
+node.Hostel {
+  color: #8DCC93;
+  border-color: #5DB665;
+  caption: "{hostelName}";
+}
+node.Staff {
+  color: #F79767;
+  border-color: #F36924;
+  caption: "{staffName}";
+}
+node.LaundryOrder {
+  color: #D9C8AE;
+  border-color: #C0A378;
+  text-color-internal: #000000;
+  diameter: 65px;
+  caption: "{orderId}";
+}
+node.Service {
+  color: #C990C0;
+  border-color: #B261A5;
+  caption: "{serviceName}";
+}
+node.GarmentType {
+  color: #FFC454;
+  border-color: #D7A013;
+  text-color-internal: #000000;
+  caption: "{garmentName}";
+}
+node.QueueEntry {
+  color: #DA7194;
+  border-color: #CC3C6C;
+  diameter: 40px;
+  caption: "{queueId}";
+}
+node.Machine {
+  color: #57C7E3;
+  border-color: #23B3D7;
+  text-color-internal: #000000;
+  caption: "{machineId}";
+}
+node.Payment {
+  color: #569480;
+  border-color: #447666;
+  caption: "{paymentId}";
+}
+node.Notification {
+  color: #ECB5C9;
+  border-color: #DA7298;
+  text-color-internal: #000000;
+  diameter: 40px;
+  caption: "{notificationType}";
+}
+relationship.CONTAINS {
+  caption: "{quantity}";
+}

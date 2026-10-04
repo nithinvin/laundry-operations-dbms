@@ -1,10 +1,18 @@
 # Queries — SQL / PL/SQL vs Cypher / Python
 
 Every query from the Oracle project is listed here next to its graph
-version, with the **expected output** for the sample data. These are design
-drafts. They are verified and finalized in Phase 4 and Phase 5 of
-[plan.md](plan.md), and the final versions live in `cypher/03_queries.cypher`
-and `python/`.
+version, with the **expected output** for the sample data. All outputs below
+were checked against the running database. The source files are:
+
+| Part | File | Saved output |
+|------|------|--------------|
+| A. SQL queries | `cypher/03_queries.cypher` | [outputs/queries.txt](outputs/queries.txt) |
+| B. PL/SQL blocks | `python/plsql_q1_…py` … `plsql_q5_…py` | [outputs/plsql_equivalents.txt](outputs/plsql_equivalents.txt) |
+| C. Graph showcase | `cypher/06_showcase.cypher` | — |
+| D. Workflow | `cypher/05_workflow.cypher`, `python/workflow.py` | — |
+
+Run them with `./scripts/run_cypher.sh 03_queries.cypher` and
+`python python/run_plsql_equivalents.py`.
 
 Overall average order amount, used by Q2: (100 + 140 + 240 + 75 + 120) / 5 = **135**.
 
@@ -137,14 +145,14 @@ procedural work.**
 | `NVL(x, 0)` | `coalesce(x, 0)` in Cypher |
 | `SET SERVEROUTPUT ON` | not needed |
 
-Common helper (`python/db.py`, sketch):
+Every script connects through `python/db.py` (shown here simplified). It reads `.env` from the repo root:
 
 ```python
 import os
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 
-load_dotenv()
+load_dotenv()  # reads NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD from .env
 
 def get_driver():
     return GraphDatabase.driver(
@@ -154,6 +162,8 @@ def get_driver():
 ```
 
 ### B1. Order with the highest total cost (variables, SELECT INTO, MAX, subquery)
+
+File: `python/plsql_q1_highest_order.py` (simplified below). B2–B5 follow the same pattern, in `plsql_q2_total_revenue.py`, `plsql_q3_student_orders.py`, `plsql_q4_pending_orders.py` and `plsql_q5_ready_check.py`.
 
 ```python
 query = """
@@ -197,8 +207,8 @@ Expected: `Total Revenue from Paid Orders: 675`
 ```cypher
 MATCH (s:Student)
 OPTIONAL MATCH (s)-[:PLACED]->(o:LaundryOrder)
-RETURN s.studentName AS studentName, count(o) AS orderCount
-ORDER BY s.studentId
+RETURN s.studentId AS studentId, s.studentName AS studentName, count(o) AS orderCount
+ORDER BY studentId
 ```
 
 Python loop: `for rec in result: print(f"Student: {rec['studentName']} | Orders: {rec['orderCount']}")`
@@ -272,18 +282,18 @@ These questions show where a graph is natural to use.
 
 ```cypher
 MATCH (s:Student)-[:PLACED]->(:LaundryOrder)-[:GENERATED]->(n:Notification {readStatus: 'Unread'})
-RETURN s.studentName, collect(n.notificationId) AS unread
-ORDER BY s.studentName;
+RETURN s.studentName AS student, collect(n.notificationId) AS unread
+ORDER BY student;
 ```
 
-Expected: Aditya [N008], Nithin [N003], Rahul [N005]
+Expected: `Aditya [N008]`, `Nithin [N003]`, `Rahul [N005]`
 
 ### C2. Whose laundry is queued on machine M001?
 
 ```cypher
 MATCH (s:Student)-[:PLACED]->(o:LaundryOrder)-[:IN_QUEUE]->(q:QueueEntry)-[:FOR_MACHINE]->(:Machine {machineId: 'M001'})
-RETURN q.queuePosition, o.orderId, s.studentName
-ORDER BY q.queuePosition;
+RETURN q.queuePosition AS position, o.orderId AS orderId, s.studentName AS student
+ORDER BY position;
 ```
 
 Expected: `1 | O002 | Arjun`, `2 | O003 | Rahul`
@@ -294,49 +304,101 @@ Expected: `1 | O002 | Arjun`, `2 | O003 | Rahul`
 MATCH (s1:Student)-[:PLACED]->(:LaundryOrder)-[:CONTAINS]->(g:GarmentType)
       <-[:CONTAINS]-(:LaundryOrder)<-[:PLACED]-(s2:Student)
 WHERE s1.studentId < s2.studentId
-RETURN s1.studentName, s2.studentName, collect(DISTINCT g.garmentName) AS shared;
+RETURN s1.studentName AS student1, s2.studentName AS student2,
+       collect(DISTINCT g.garmentName) AS sharedGarments
+ORDER BY student1, student2;
 ```
 
-Expected: Nithin–Arjun [Shirt], Nithin–Aditya [Shirt], Arjun–Aditya [Shirt], Nithin–Karthik [Pants]
+Expected:
 
-### C4. Everything connected to order O001 (visual — run in Browser, Graph view)
+```
+Arjun  | Aditya  | [Shirt]
+Nithin | Aditya  | [Shirt]
+Nithin | Arjun   | [Shirt]
+Nithin | Karthik | [Pants]
+```
+
+### C4. Everything within two hops of order O001 (visual: run in Browser, graph view)
 
 ```cypher
 MATCH p = (o:LaundryOrder {orderId: 'O001'})-[*1..2]-()
 RETURN p;
 ```
 
+Expected: 15 paths. They reach the student and hostel, the staff member, the
+service, both garments (and the other orders that share them), the queue entry
+and machine, the payment, and the 3 notifications.
+
 ### C5. Which hostels does each staff member serve? (three hops)
 
 ```cypher
 MATCH (st:Staff)-[:ASSIGNED_TO]->(:LaundryOrder)<-[:PLACED]-(:Student)-[:LIVES_IN]->(h:Hostel)
-RETURN st.staffName, collect(DISTINCT h.hostelName) AS hostels
-ORDER BY st.staffName;
+RETURN st.staffName AS staff, collect(DISTINCT h.hostelName) AS hostels
+ORDER BY staff;
 ```
+
+Expected: Anita [Block D], Priya [Block C], Ramesh [Block A], Suresh [Block B],
+Vijay [Block E]. With the current data each staff member has one order. As
+more orders are added, this list grows without changing the query.
 
 ---
 
 ## Part D — Workflow operations (GR-5)
 
-These operations **change data**. Run `./scripts/reset.sh` afterwards if you
-want the Part A/B outputs to match again.
+These operations **change data**. Run `./scripts/reset.sh` afterwards to get
+the Part A/B outputs back.
+
+### D1. Python: `python/workflow.py`
+
+| Command | What it does |
+|---------|--------------|
+| `show O002` | Order status and its notifications |
+| `advance O002` | Moves to the next status: Received → Queued → Processing → Ready for Pickup → Picked Up |
+| `cancel O005` | Cancels an order that is not yet ready |
+| `remind` | Sends a "Pickup Reminder" for every order still waiting for pickup |
+
+The status change and its notification run in **one write transaction**:
+either both happen or neither does. Notifications are created automatically
+when an order enters Processing ("Processing"), Ready for Pickup ("Ready for
+Pickup", which also sets `actualCompletion`), Picked Up ("Pickup
+Confirmation") or Cancelled ("Order Cancelled"). The next notification ID
+(`N009`, `N010`, …) is computed from the highest existing one.
+
+Example run on fresh data:
+
+```
+$ python python/workflow.py advance O002
+Order O002: Processing -> Ready for Pickup
+Notification N009 created.
+$ python python/workflow.py show O002
+Order O002 | Student: Arjun | Status: Ready for Pickup
+  N004 Processing (Read)
+  N009 Ready for Pickup (Unread)
+$ python python/workflow.py advance O004
+Order O004 is 'Picked Up'; it cannot move forward.
+```
+
+### D2. Cypher in Browser: `cypher/05_workflow.cypher`
+
+The same "mark ready + notify" step in plain Cypher, using Browser parameters:
 
 ```cypher
-// Mark an order ready and notify the student
+:param orderId => 'O002';
+:param notificationId => 'N009';
+
 MATCH (o:LaundryOrder {orderId: $orderId})
 WHERE o.status = 'Processing'
-SET o.status = 'Ready for Pickup', o.actualCompletion = localdatetime()
-CREATE (o)-[:GENERATED]->(:Notification {
+SET o.status = 'Ready for Pickup',
+    o.actualCompletion = localdatetime.truncate('second', localdatetime())
+CREATE (o)-[:GENERATED]->(n:Notification {
   notificationId: $notificationId,
   notificationType: 'Ready for Pickup',
   message: 'Your laundry order ' + o.orderId + ' is ready for pickup.',
-  sentAt: localdatetime(),
+  sentAt: localdatetime.truncate('second', localdatetime()),
   readStatus: 'Unread'
 })
-RETURN o.orderId, o.status;
+RETURN o.orderId, o.status, n.notificationId, n.message;
 ```
 
-`python/workflow.py` works out the next notification ID (`N009`, …), runs
-this inside one transaction, and refuses status changes that are not allowed.
-The allowed path is Received → Queued → Processing → Ready for Pickup →
-Picked Up, and Cancelled is allowed from any non-final status.
+The file then shows the student's unread notifications (found by traversal)
+and marks the notification as read.

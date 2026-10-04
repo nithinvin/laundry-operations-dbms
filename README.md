@@ -22,10 +22,11 @@ pickup**, which keeps the laundry area less crowded.
 | [docs/runbook.md](docs/runbook.md) | Install, load, run, reset and troubleshoot (openSUSE first, then Windows 11 + WSL Ubuntu 24.04) |
 | [docs/demo-script.md](docs/demo-script.md) | Step-by-step walkthrough for presenting the project in Neo4j Browser |
 | [reference/oracle/](reference/oracle/) | The original Oracle design doc, SQL script and sqlplus spool output (read-only reference) |
-| `cypher/` *(planned)* | Cypher scripts: constraints, data load, queries, validation |
-| `python/` *(planned)* | Python driver scripts that replace the PL/SQL blocks, plus a validation runner |
-| `scripts/` *(planned)* | Helper shell scripts: start / load / reset |
-| `docker-compose.yml` *(planned)* | Neo4j Community container definition |
+| [cypher/](cypher/) | Cypher scripts: constraints, data load, queries, validation, workflow, showcase, Browser style |
+| [python/](python/) | Python driver scripts: PL/SQL equivalents, validation runner, order workflow |
+| [scripts/](scripts/) | Helper shell scripts: load, reset, validate, run a Cypher file |
+| [docker-compose.yml](docker-compose.yml) | Neo4j Community container definition |
+| [docs/outputs/](docs/outputs/) | Saved outputs of the queries and Python scripts |
 
 ## Tech stack
 
@@ -34,14 +35,16 @@ pickup**, which keeps the laundry area less crowded.
 - **Python 3** with the official `neo4j` driver package
 - **Docker**, on openSUSE Leap 16.0 (for verification) and on Windows 11 → WSL 2 → Ubuntu 24.04 (for the final demo)
 
-## Quick start (once implementation is done)
+## Quick start
 
 ```bash
-cp .env.example .env              # set NEO4J_PASSWORD
-docker compose up -d              # start Neo4j
-./scripts/load.sh                 # constraints + sample data
-./scripts/validate.sh             # integrity checks (expect 0 violations)
-python3 python/run_plsql_equivalents.py
+cp .env.example .env                          # set NEO4J_PASSWORD
+python3 -m venv .venv && .venv/bin/pip install -r python/requirements.txt
+docker compose up -d                          # start Neo4j
+./scripts/load.sh                             # constraints + sample data (53 nodes, 51 relationships)
+./scripts/validate.sh                         # 42 integrity checks, all must PASS
+./scripts/run_cypher.sh 03_queries.cypher     # the 5 SQL queries in Cypher
+.venv/bin/python python/run_plsql_equivalents.py   # the 5 PL/SQL blocks in Python
 ```
 
 Then open <http://localhost:7474> and follow [docs/demo-script.md](docs/demo-script.md).
@@ -52,4 +55,6 @@ See [docs/runbook.md](docs/runbook.md) for the full details.
 | Phase | Status |
 |-------|--------|
 | 0. Documentation and plan | Done |
-| 1–7. Implementation | Not started (see [docs/plan.md](docs/plan.md)) |
+| 1–6. Implementation on openSUSE | Done |
+| 7. Run on Windows 11 / WSL Ubuntu 24.04 | Not started |
+| 8. Demo readiness | Not started |

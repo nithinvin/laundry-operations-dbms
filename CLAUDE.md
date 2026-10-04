@@ -46,8 +46,10 @@ docs:
   counts → integer. Leave properties out rather than storing NULL.
 - Cypher scripts are idempotent: `CREATE CONSTRAINT … IF NOT EXISTS` and
   `MERGE` on IDs.
-- Validation checks are named `// V-<kind>-<name>` (kinds: NN, CK, FK, 11,
-  UQ, DC).
+- Validation checks are named `// V-<kind>-<name>: <description>` (kinds: NN,
+  CK, FK, 11, UQ, DC). `python/validate.py` splits the file on these headers,
+  so each check must be a single statement.
+- If a query or script output changes, regenerate `docs/outputs/` too.
 - Python: scripts in `python/`, connection through `python/db.py`, credentials
   from `.env` (git-ignored; template in `.env.example`). Never hardcode or
   commit passwords.
@@ -57,12 +59,14 @@ docs:
 ## Commands
 
 ```bash
+python3 -m venv .venv && .venv/bin/pip install -r python/requirements.txt   # once
 docker compose up -d                 # start Neo4j (Browser: http://localhost:7474)
-./scripts/load.sh                    # constraints + data
-./scripts/validate.sh                # all checks must PASS
+./scripts/load.sh                    # constraints + data -> 53 nodes, 51 rels, 14 constraints
+./scripts/validate.sh                # 42 checks, all must PASS
 ./scripts/reset.sh                   # wipe + reload (do this after workflow ops)
-source .venv/bin/activate && python python/run_plsql_equivalents.py
-docker exec -i laundry-neo4j cypher-shell -u neo4j -p "$NEO4J_PASSWORD" -f /cypher/03_queries.cypher
+./scripts/run_cypher.sh 03_queries.cypher          # any file in cypher/
+.venv/bin/python python/run_plsql_equivalents.py   # PL/SQL Q1-Q5 equivalents
+.venv/bin/python python/workflow.py show|advance|cancel O002 ; workflow.py remind
 ```
 
 ## Environments

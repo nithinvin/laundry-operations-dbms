@@ -56,7 +56,7 @@ is shown in brackets.
 | FR-7 | Store several garment types per order [FR7] | `(:LaundryOrder)-[:CONTAINS {quantity, unitPrice}]->(:GarmentType)` |
 | FR-8 | Assign staff to orders [FR8] | `(:Staff)-[:ASSIGNED_TO]->(:LaundryOrder)` |
 | FR-9 | Track machines and queue entries [FR9] | `:Machine` and `:QueueEntry` nodes |
-| FR-10 | Record one payment per order [FR10] | `(:LaundryOrder)-[:HAS_PAYMENT]->(:Payment)`, at most one (checked by a validation query) |
+| FR-10 | Record one payment per order [FR10] | `(:LaundryOrder)-[:HAS_PAYMENT]->(:Payment)`, exactly one per order (checked by a validation query) |
 | FR-11 | Store several notifications per order [FR11] | `(:LaundryOrder)-[:GENERATED]->(:Notification)` |
 | FR-12 | Track order status and completion times [FR12] | `status`, `orderDateTime`, `expectedCompletion`, `actualCompletion` properties |
 | FR-13 | Run advanced reports [FR13] | The 5 Cypher queries in [queries.md](queries.md) |

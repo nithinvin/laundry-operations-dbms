@@ -149,13 +149,13 @@ CREATE INDEX order_status IF NOT EXISTS FOR (n:LaundryOrder) ON (n.status);
 | NOT NULL | Property existence constraints are Enterprise-only | Validation query V-NN-* |
 | CHECK (value ranges, IN lists, date order) | Neo4j has no CHECK constraints at all | Validation queries V-CK-* |
 | FK "total participation" (every order has a student, service and staff) | Graphs have no FK concept, and a relationship cannot be made mandatory | Validation queries V-FK-* |
-| PAYMENT.OrderID UNIQUE (1:1) | Uniqueness is per node property, not per relationship count | Validation query V-11-payment |
+| PAYMENT.OrderID UNIQUE (1:1) | Uniqueness is per node property, not per relationship count | Validation query V-11-payment (exactly one payment per order) |
 | UNIQUE(MachineID, QueuePosition) | The machine is reached through a relationship, not stored as a property | Validation query V-UQ-queue |
 | Composite PK of ORDER_ITEM | Became a relationship; `MERGE` stops duplicate `CONTAINS` relationships between the same pair | Validation query V-UQ-contains |
 | Data consistency: totalAmount = Σ quantity × unitPrice | Was not enforced in Oracle either (documented by hand) | Validation query V-DC-total |
 
-The validation suite (`cypher/04_validation.cypher`, run by
-`python/validate.py`) follows one rule: **each query returns the violating
+The validation suite (`cypher/04_validation.cypher`, 42 checks, run by
+`./scripts/validate.sh`) follows one rule: **each query returns the violating
 rows, and an empty result means pass.** Examples:
 
 ```cypher
@@ -191,26 +191,29 @@ RETURN m.machineId, pos, c;
 | D9 | No APOC | APOC procedures | Keeps the Docker setup plain and the Cypher portable |
 | D10 | PL/SQL → Python driver scripts | APOC custom procedures; Cypher only | Python shows the same concepts (variables, IF, loops, iterating a result like a cursor) in a way that is easy to explain |
 
-## 7. Planned code layout
+## 7. Code layout
 
 ```
 cypher/
   00_reset.cypher            MATCH (n) DETACH DELETE n
-  01_constraints.cypher      constraints + indexes (section 5)
-  02_load_data.cypher        MERGE nodes, then relationships
-  03_queries.cypher          5 ported SQL queries
-  04_validation.cypher       V-* integrity checks
-  05_workflow.cypher         status transitions + notification creation (GR-5)
-  06_showcase.cypher         graph-only queries (GR-6)
+  01_constraints.cypher      14 uniqueness constraints + status index (section 5)
+  02_load_data.cypher        UNWIND + MERGE: nodes first, then relationships
+  03_queries.cypher          the 5 ported SQL queries (queries.md Part A)
+  04_validation.cypher       42 V-* integrity checks
+  05_workflow.cypher         mark-ready + notify, step by step for Browser (Part D)
+  06_showcase.cypher         graph showcase queries C1-C5 (Part C)
+  browser-style.grass        Neo4j Browser colours/captions per label
 python/
   requirements.txt           neo4j, python-dotenv
-  db.py                      driver/session helper reading .env
-  plsql_q1_highest_order.py  ... plsql_q5_ready_check.py
+  db.py                      driver helper reading .env (run it directly as a smoke test)
+  plsql_q1_highest_order.py  ... plsql_q5_ready_check.py  (PL/SQL Q1-Q5)
   run_plsql_equivalents.py   runs all 5
-  validate.py                runs 04_validation, prints PASS/FAIL per check
-  workflow.py                advance order status / mark ready + notify
+  validate.py                runs 04_validation.cypher, prints PASS/FAIL per check
+  workflow.py                show / advance / cancel / remind
 scripts/
-  load.sh  validate.sh  reset.sh
+  common.sh                  shared helpers (reads .env, runs cypher-shell in the container)
+  load.sh  reset.sh  validate.sh  run_cypher.sh
+docs/outputs/                saved query and script outputs (like the sqlplus spool)
 docker-compose.yml
 .env.example
 ```

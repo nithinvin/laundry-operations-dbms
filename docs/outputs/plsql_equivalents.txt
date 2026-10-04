@@ -1,0 +1,25 @@
+=== Q1. Find order with highest total cost ===
+Order ID: O003
+Student ID: S003
+Service ID: SV003
+Highest Total Amount: 240
+
+=== Q2. Calculate total revenue from paid orders ===
+Total Revenue from Paid Orders: 675
+
+=== Q3. Display each student and order count ===
+Student: Nithin | Orders: 1
+Student: Arjun | Orders: 1
+Student: Rahul | Orders: 1
+Student: Karthik | Orders: 1
+Student: Aditya | Orders: 1
+
+=== Q4. Display pending laundry orders ===
+Order: O001 | Student: Nithin | Service: Normal Wash | Status: Ready for Pickup
+Order: O002 | Student: Arjun | Service: Wash and Iron | Status: Processing
+Order: O003 | Student: Rahul | Service: Dry Clean | Status: Queued
+Order: O005 | Student: Aditya | Service: Express Wash | Status: Received
+
+=== Q5. Check whether an order is ready for pickup ===
+Order O001 is ready for pickup.
+

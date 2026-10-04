@@ -10,9 +10,9 @@ Target environments:
 Neo4j runs in Docker in both environments, so after the one-time setup in
 section 1 or 2, **every command from section 3 onward is identical.**
 
-> Commands marked *(planned)* refer to files created during implementation
-> (see [plan.md](plan.md)). This runbook is updated in Phase 7 with the
-> exact, tested commands.
+> Every command in sections 3–9 was tested on Env A (openSUSE Leap 16.0,
+> Docker Compose 2.33, Neo4j 2026.09.0, Python 3.13, neo4j driver 6.3).
+> Write down any differences found on Env B in section 10.
 
 ---
 
@@ -96,108 +96,129 @@ connect with `neo4j://localhost:7687`.
 
 ---
 
-## 3. Configure
+## 3. Configure (once per clone)
 
-*(planned)* Copy the example environment file and set a password:
+All commands are run from the repo root.
 
 ```bash
 cp .env.example .env
-# edit .env:
-#   NEO4J_URI=bolt://localhost:7687
-#   NEO4J_USER=neo4j
-#   NEO4J_PASSWORD=<at least 8 characters>
+nano .env               # set NEO4J_PASSWORD (at least 8 characters)
+
+python3 -m venv .venv
+.venv/bin/pip install -r python/requirements.txt
 ```
 
-`.env` is git-ignored. Never commit it.
+`.env` holds:
+
+```
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=<your password>
+```
+
+It is git-ignored. Never commit it. Docker Compose also reads it, to set the
+initial Neo4j password.
 
 ## 4. Start Neo4j
 
-*(planned)* `docker-compose.yml`, in outline:
-
-```yaml
-services:
-  neo4j:
-    image: neo4j:2026.09.0-community     # fallback: neo4j:5.26-community (LTS)
-    container_name: laundry-neo4j
-    ports: ["7474:7474", "7687:7687"]
-    environment:
-      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD}
-      NEO4J_server_memory_heap_max__size: 512m
-      NEO4J_server_memory_pagecache_size: 256m
-    volumes:
-      - neo4j-data:/data
-      - ./cypher:/cypher:ro
-volumes:
-  neo4j-data:
-```
-
 ```bash
 docker compose up -d
-docker compose logs -f neo4j      # wait for "Started." then Ctrl+C
+docker compose ps         # wait until STATUS shows (healthy), about 15–30 s
+```
+
+`docker-compose.yml` runs the `neo4j:2026.09.0-community` image as the
+container `laundry-neo4j`:
+
+| Setting | Value |
+|---------|-------|
+| Ports | 7474 (Browser / HTTP), 7687 (Bolt) |
+| Memory | heap 512 MB, page cache 256 MB (laptop-friendly) |
+| Data | named volume `neo4j-data` (survives restarts) |
+| `./cypher` | mounted read-only at `/cypher` inside the container, so `cypher-shell -f /cypher/<file>` works |
+
+Quick connection test from Python:
+
+```bash
+.venv/bin/python python/db.py     # Connected to Neo4j, RETURN 1 -> 1
 ```
 
 ## 5. Load schema and data
 
-*(planned)* `./scripts/load.sh` runs these, in this order:
-
 ```bash
-docker exec -i laundry-neo4j cypher-shell -u neo4j -p "$NEO4J_PASSWORD" -f /cypher/01_constraints.cypher
-docker exec -i laundry-neo4j cypher-shell -u neo4j -p "$NEO4J_PASSWORD" -f /cypher/02_load_data.cypher
+./scripts/load.sh
 ```
 
-Check the counts (expected values are in [spec.md §5](spec.md#5-data-requirements)):
+This runs `cypher/01_constraints.cypher` and then `cypher/02_load_data.cypher`
+inside the container, and prints the counts. Expected at the end:
 
-```cypher
-MATCH (n) RETURN labels(n)[0] AS label, count(*) ORDER BY label;      // 53 total
-MATCH ()-[r]->() RETURN type(r) AS rel, count(*) ORDER BY rel;          // 51 total
-SHOW CONSTRAINTS;                                                       // 14
 ```
+nodes, relationships
+53, 51
+constraints
+14
+```
+
+It is safe to run again: the counts stay the same.
 
 ## 6. Validate
 
 ```bash
-./scripts/validate.sh            # (planned) wraps: python python/validate.py
+./scripts/validate.sh
 ```
 
-Every check must report `PASS` (0 violating rows).
+This runs the 42 checks in `cypher/04_validation.cypher`. Expected last line:
+`42/42 checks passed.` The script exits with status 1 if any check fails, and
+prints the rows that break the rule.
 
 ## 7. Run the queries
 
-**In Neo4j Browser:** paste the queries from `cypher/03_queries.cypher` one
-at a time, following [demo-script.md](demo-script.md).
-
-**From the terminal:**
+**Terminal: Cypher files**, printed as tables:
 
 ```bash
-docker exec -i laundry-neo4j cypher-shell -u neo4j -p "$NEO4J_PASSWORD" -f /cypher/03_queries.cypher
+./scripts/run_cypher.sh 03_queries.cypher     # 5 ported SQL queries
+./scripts/run_cypher.sh 06_showcase.cypher    # graph showcase queries
 ```
 
-**Python (the PL/SQL equivalents):**
+**Terminal: the PL/SQL equivalents:**
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r python/requirements.txt
-python python/run_plsql_equivalents.py
+.venv/bin/python python/run_plsql_equivalents.py     # all 5
+.venv/bin/python python/plsql_q5_ready_check.py O002 # one script, with an argument
 ```
 
-Compare the output with the expected output in [queries.md](queries.md).
+Compare with [queries.md](queries.md) and `docs/outputs/`. (You can also run
+`source .venv/bin/activate` once, then use plain `python`.)
+
+**Neo4j Browser:**
+
+1. Open <http://localhost:7474> (from Windows when using WSL).
+2. Connect URL: `neo4j://localhost:7687`, user `neo4j`, and the password from `.env`.
+3. *Optional style:* type `:style` and drag `cypher/browser-style.grass`
+   onto the style panel. This gives colours and captions per label.
+4. Paste queries from the `cypher/*.cypher` files. See [demo-script.md](demo-script.md).
+
+**Workflow operations** (these change data):
+
+```bash
+.venv/bin/python python/workflow.py show O002
+.venv/bin/python python/workflow.py advance O002
+.venv/bin/python python/workflow.py remind
+```
 
 ## 8. Reset
 
 ```bash
-./scripts/reset.sh      # (planned) DETACH DELETE everything, then re-run load.sh
+./scripts/reset.sh      # delete all nodes/relationships, then run load.sh
 ```
 
-Full wipe, including the stored password and the data volume:
+Reset after any workflow operation or manual edit, and before a demo.
+
+Full wipe, which also removes the stored password and the data volume:
 
 ```bash
 docker compose down -v
 docker compose up -d && ./scripts/load.sh
 ```
-
-Reset after running any workflow operation (queries.md Part D) and before
-a demo.
 
 ## 9. Stop
 
@@ -218,7 +239,9 @@ docker compose down      # removes the container, keeps the volume
 | Browser on Windows cannot reach `localhost:7474` | WSL localhost forwarding is off, or the container is not running | `docker ps` inside WSL; in `%UserProfile%\.wslconfig` make sure `localhostForwarding=true` (or that networking mode is not set to block it); `wsl --shutdown` and retry |
 | `ServiceUnavailable` from Python | Neo4j is still starting | Wait for `Started.` in the logs |
 | `./scripts/*.sh: /bin/bash^M: bad interpreter` | CRLF line endings (repo cloned on the Windows side) | Clone inside WSL (`~/`), or `git config core.autocrlf input` and re-checkout |
-| `error: externally-managed-environment` from pip | PEP 668 on Ubuntu 24.04 | Use the `.venv` virtual environment (section 7) |
+| `error: externally-managed-environment` from pip | PEP 668 on Ubuntu 24.04 | Use the `.venv` virtual environment (section 3) |
+| `ERROR: .venv not found` from validate.sh | Virtual environment not created | Section 3 |
+| `ERROR: .env not found` from a script | `.env` not created | `cp .env.example .env` and set the password |
 | `docker: permission denied` | User is not in the `docker` group yet | `sudo usermod -aG docker $USER`, then reopen the terminal |
 | Query outputs do not match queries.md | Data changed by workflow operations or manual edits | `./scripts/reset.sh` |
 | Neo4j uses too much RAM on a laptop | Default memory settings | Lower the heap/pagecache settings in `docker-compose.yml` |

@@ -1,8 +1,12 @@
 # Demo Script — Presenting in Neo4j Browser
 
-Target length: **10–15 minutes**. Before you start: run `./scripts/reset.sh`,
-open <http://localhost:7474>, log in, and set the Browser zoom so that queries
-are readable on a projector.
+Target length: **10–15 minutes**. Before you start:
+
+1. `docker compose up -d`, then `./scripts/reset.sh`
+2. Open <http://localhost:7474> and log in
+3. Type `:style` and drag `cypher/browser-style.grass` onto the style panel
+   (colours and captions per label)
+4. Set the Browser zoom so that queries are readable on a projector
 
 ## 1. Introduce the project (1 min)
 
@@ -67,7 +71,7 @@ the Cypher idea in one sentence:
 In a terminal:
 
 ```bash
-python python/run_plsql_equivalents.py
+.venv/bin/python python/run_plsql_equivalents.py
 ./scripts/validate.sh
 ```
 
@@ -82,8 +86,25 @@ Run C1 (unread notifications per student), C2 (whose laundry is on machine
 M001) and C3 (students who send the same garments) from queries.md.
 "Each of these is a single pattern in Cypher. In SQL they need 3–5 joins."
 
-Optional live workflow: mark O002 ready, then show the new notification. Run
-`reset.sh` afterwards.
+Optional live workflow:
+
+```bash
+.venv/bin/python python/workflow.py advance O002   # Processing -> Ready for Pickup, creates N009
+.venv/bin/python python/workflow.py show O002
+.venv/bin/python python/workflow.py remind         # pickup reminders for orders still waiting
+./scripts/reset.sh                                 # back to the original data
+```
+
+"The status change and the notification happen in one transaction. This is
+the main goal of the system: telling students when their laundry is ready."
+
+Optional: show that a uniqueness constraint really blocks duplicates:
+
+```cypher
+CREATE (:Student {studentId: 'S001', studentName: 'Duplicate'});
+// Fails: Property uniqueness constraint violated: Node(...) already exists
+//        with label `Student` and property `studentId` = 'S001'
+```
 
 ## 7. Likely questions
 
