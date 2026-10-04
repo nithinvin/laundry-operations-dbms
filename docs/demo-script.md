@@ -7,6 +7,10 @@ Target length: **10–15 minutes**. Before you start:
 3. Type `:style` and drag `cypher/browser-style.grass` onto the style panel
    (colours and captions per label)
 4. Set the Browser zoom so that queries are readable on a projector
+5. In a terminal next to the Browser, keep this ready. It prints each query's
+   question, Oracle SQL and Cypher, then waits for Enter:
+   `./scripts/run_cypher.sh --show --pause 03_queries.cypher`
+   Copy each Cypher block into the Browser to show it there as well.
 
 ## 1. Introduce the project (1 min)
 
@@ -55,8 +59,10 @@ edges, the queue entry and machine, the payment, and the 3 notifications.
 
 ## 4. The 5 Oracle queries in Cypher (4 min)
 
-Run A1–A5 from [queries.md](queries.md). For each one, give the SQL idea and
-the Cypher idea in one sentence:
+Run A1–A5 one at a time, either with
+`./scripts/run_cypher.sh --show --pause 03_queries.cypher` or by pasting the
+printed Cypher into the Browser. For each one, give the SQL idea and the
+Cypher idea in one sentence:
 
 | Query | Talking point |
 |-------|---------------|
@@ -71,7 +77,7 @@ the Cypher idea in one sentence:
 In a terminal:
 
 ```bash
-.venv/bin/python python/run_plsql_equivalents.py
+.venv/bin/python python/run_plsql_equivalents.py --show --pause
 ./scripts/validate.sh
 ```
 
@@ -82,8 +88,10 @@ In a terminal:
 
 ## 6. Graph advantage (2 min, optional)
 
-Run C1 (unread notifications per student), C2 (whose laundry is on machine
-M001) and C3 (students who send the same garments) from queries.md.
+Run `./scripts/run_cypher.sh --show --pause 06_showcase.cypher`: C1 (unread
+notifications per student), C2 (whose laundry is on machine M001) and C3
+(students who send the same garments). Paste C4 into the Browser to show the
+neighbourhood of order O001 as a picture.
 "Each of these is a single pattern in Cypher. In SQL they need 3–5 joins."
 
 Optional live workflow:

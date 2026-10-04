@@ -207,8 +207,9 @@ python/
   requirements.txt           neo4j, python-dotenv
   db.py                      driver helper reading .env (run it directly as a smoke test)
   plsql_q1_highest_order.py  ... plsql_q5_ready_check.py  (PL/SQL Q1-Q5)
-  run_plsql_equivalents.py   runs all 5
+  run_plsql_equivalents.py   runs all 5 (--show, --pause)
   validate.py                runs 04_validation.cypher, prints PASS/FAIL per check
+  run_cypher.py              runs any cypher/ file statement by statement (--show, --pause)
   workflow.py                show / advance / cancel / remind
 scripts/
   common.sh                  shared helpers (reads .env, runs cypher-shell in the container)

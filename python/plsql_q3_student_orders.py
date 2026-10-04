@@ -1,6 +1,8 @@
 """PL/SQL Q3 equivalent: display each student and their order count.
 
+Question: how many orders has each student placed (including students with none)?
 PL/SQL concepts shown: cursor, FOR loop, LEFT JOIN (OPTIONAL MATCH), COUNT.
+Expected: 5 students, 1 order each
 """
 
 from db import get_driver

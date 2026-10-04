@@ -13,6 +13,16 @@ set -a; source .env; set +a
 
 CONTAINER="laundry-neo4j"
 
+PYTHON="$REPO_ROOT/.venv/bin/python"
+
+# Stop with a helpful message if the Python virtual environment is missing.
+require_venv() {
+  if [[ ! -x "$PYTHON" ]]; then
+    echo "ERROR: .venv not found. Run: python3 -m venv .venv && .venv/bin/pip install -r python/requirements.txt" >&2
+    exit 1
+  fi
+}
+
 # Run a Cypher file (path relative to cypher/) inside the container.
 run_cypher() {
   docker exec -i "$CONTAINER" cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" \

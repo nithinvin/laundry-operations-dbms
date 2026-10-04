@@ -45,6 +45,8 @@ docker compose up -d                          # start Neo4j
 ./scripts/validate.sh                         # 42 integrity checks, all must PASS
 ./scripts/run_cypher.sh 03_queries.cypher     # the 5 SQL queries in Cypher
 .venv/bin/python python/run_plsql_equivalents.py   # the 5 PL/SQL blocks in Python
+# add --show to print each Cypher query, --pause to step through one by one:
+./scripts/run_cypher.sh --show --pause 03_queries.cypher
 ```
 
 Then open <http://localhost:7474> and follow [docs/demo-script.md](docs/demo-script.md).

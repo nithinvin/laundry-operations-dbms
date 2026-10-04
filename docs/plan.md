@@ -81,6 +81,7 @@ on B4).
 - [x] `cypher/05_workflow.cypher` + `python/workflow.py` — status transitions, "ready" notification (GR-5)
 - [x] `cypher/06_showcase.cypher` — C1–C5 (GR-6)
 - [x] Browser style file `cypher/browser-style.grass` — colours and captions per label (GR-7)
+- [x] Demo runner: `python/run_cypher.py` behind `scripts/run_cypher.sh`, plus `run_plsql_equivalents.py`. Each prints a title, question and expected result before every query; `--show` prints the Cypher to copy into Browser; `--pause` steps through one query at a time
 - [ ] Screenshots of the Browser graph view in `docs/images/` (schema visualization, order O001 neighbourhood). Take these by hand in the Browser.
 
 **Done when:** the workflow demo works and resets cleanly; the showcase

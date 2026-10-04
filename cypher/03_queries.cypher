@@ -1,9 +1,16 @@
 // 03_queries.cypher
 // The 5 "advanced SQL" queries from the Oracle version, written in Cypher.
-// Expected outputs are listed in docs/queries.md (Part A).
+// The comment block above each query is printed as its title and description
+// by ./scripts/run_cypher.sh. Expected outputs are also in docs/queries.md.
 
 // A1. Student with the most expensive order
-// SQL: WHERE totalamount = (SELECT max(totalamount) FROM laundry_order)
+// Question: which student placed the order with the highest total amount?
+// Oracle SQL:
+//   SELECT s.studentid, s.studentname, l.orderid, l.totalamount
+//   FROM student s JOIN laundry_order l ON s.studentid = l.studentid
+//   WHERE l.totalamount = (SELECT max(totalamount) FROM laundry_order);
+// Cypher idea: compute max() first with WITH, then match the order with that amount.
+// Expected: S003 | Rahul | O003 | 240.0
 MATCH (o:LaundryOrder)
 WITH max(o.totalAmount) AS maxAmount
 MATCH (s:Student)-[:PLACED]->(o:LaundryOrder)
@@ -11,7 +18,14 @@ WHERE o.totalAmount = maxAmount
 RETURN s.studentId, s.studentName, o.orderId, o.totalAmount;
 
 // A2. Services whose average order amount is above the overall average
-// SQL: GROUP BY ... HAVING avg(totalamount) > (SELECT avg(totalamount) ...)
+// Question: which services earn more per order than the average order (135)?
+// Oracle SQL:
+//   SELECT sv.serviceid, sv.servicename, avg(l.totalamount) AS averageamount
+//   FROM service sv JOIN laundry_order l ON sv.serviceid = l.serviceid
+//   GROUP BY sv.serviceid, sv.servicename
+//   HAVING avg(l.totalamount) > (SELECT avg(totalamount) FROM laundry_order);
+// Cypher idea: no GROUP BY keyword; grouping is implicit, and HAVING becomes WITH ... WHERE.
+// Expected: SV002 Wash and Iron 140.0, SV003 Dry Clean 240.0
 MATCH (o:LaundryOrder)
 WITH avg(o.totalAmount) AS overallAvg
 MATCH (o:LaundryOrder)-[:USES_SERVICE]->(sv:Service)
@@ -21,13 +35,28 @@ RETURN sv.serviceId, sv.serviceName, averageAmount
 ORDER BY sv.serviceId;
 
 // A3. Students with more than one order
-// Expected: no rows (each student has exactly one order), same as Oracle.
+// Question: which students have placed more than one laundry order?
+// Oracle SQL:
+//   SELECT s.studentid, s.studentname, count(l.orderid) AS ordercount
+//   FROM student s JOIN laundry_order l ON s.studentid = l.studentid
+//   GROUP BY s.studentid, s.studentname
+//   HAVING count(l.orderid) > 1;
+// Cypher idea: count the PLACED relationships per student, keep counts > 1.
+// Expected: 0 rows (each student has exactly one order; Oracle also says "no rows selected")
 MATCH (s:Student)-[:PLACED]->(o:LaundryOrder)
 WITH s, count(o) AS orderCount
 WHERE orderCount > 1
 RETURN s.studentId, s.studentName, orderCount;
 
 // A4. Garment types appearing in more than one order
+// Question: which garment types were sent in more than one order?
+// Oracle SQL:
+//   SELECT g.garmenttypeid, g.garmentname, count(DISTINCT oi.orderid) AS ordercount
+//   FROM garment_type g JOIN order_item oi ON g.garmenttypeid = oi.garmenttypeid
+//   GROUP BY g.garmenttypeid, g.garmentname
+//   HAVING count(DISTINCT oi.orderid) > 1;
+// Cypher idea: ORDER_ITEM is now the CONTAINS relationship, so no link-table join is needed.
+// Expected: G001 Shirt 3, G002 Pants 2
 MATCH (o:LaundryOrder)-[:CONTAINS]->(g:GarmentType)
 WITH g, count(DISTINCT o) AS orderCount
 WHERE orderCount > 1
@@ -35,6 +64,13 @@ RETURN g.garmentTypeId, g.garmentName, orderCount
 ORDER BY g.garmentTypeId;
 
 // A5. Orders whose payment amount matches the order amount
+// Question: for which orders does the payment equal the order total?
+// Oracle SQL:
+//   SELECT l.orderid, l.totalamount, p.amount, p.paymentstatus
+//   FROM laundry_order l JOIN payment p ON l.orderid = p.orderid
+//   WHERE p.amount = l.totalamount;
+// Cypher idea: the join on OrderID becomes the HAS_PAYMENT relationship.
+// Expected: 5 rows (O001-O005), all Paid
 MATCH (o:LaundryOrder)-[:HAS_PAYMENT]->(p:Payment)
 WHERE p.amount = o.totalAmount
 RETURN o.orderId, o.totalAmount, p.amount, p.paymentStatus

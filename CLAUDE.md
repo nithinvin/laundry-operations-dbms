@@ -49,7 +49,12 @@ docs:
 - Validation checks are named `// V-<kind>-<name>: <description>` (kinds: NN,
   CK, FK, 11, UQ, DC). `python/validate.py` splits the file on these headers,
   so each check must be a single statement.
-- If a query or script output changes, regenerate `docs/outputs/` too.
+- The comment block directly above a statement (no blank line in between) is
+  its title/description for `run_cypher.py`: first line = title, then
+  Question / Oracle SQL / Expected lines. A blank line separates file and
+  section headers from statements.
+- If a query or script output changes, regenerate `docs/outputs/` with
+  `--show` (queries.txt, showcase.txt, plsql_equivalents.txt).
 - Python: scripts in `python/`, connection through `python/db.py`, credentials
   from `.env` (git-ignored; template in `.env.example`). Never hardcode or
   commit passwords.
@@ -64,8 +69,8 @@ docker compose up -d                 # start Neo4j (Browser: http://localhost:74
 ./scripts/load.sh                    # constraints + data -> 53 nodes, 51 rels, 14 constraints
 ./scripts/validate.sh                # 42 checks, all must PASS
 ./scripts/reset.sh                   # wipe + reload (do this after workflow ops)
-./scripts/run_cypher.sh 03_queries.cypher          # any file in cypher/
-.venv/bin/python python/run_plsql_equivalents.py   # PL/SQL Q1-Q5 equivalents
+./scripts/run_cypher.sh [--show] [--pause] 03_queries.cypher   # any file in cypher/
+.venv/bin/python python/run_plsql_equivalents.py [--show] [--pause]
 .venv/bin/python python/workflow.py show|advance|cancel O002 ; workflow.py remind
 ```
 

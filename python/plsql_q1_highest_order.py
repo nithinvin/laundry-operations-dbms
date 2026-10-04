@@ -1,6 +1,8 @@
 """PL/SQL Q1 equivalent: find the order with the highest total cost.
 
+Question: which order costs the most, and who placed it with which service?
 PL/SQL concepts shown: variables, SELECT ... INTO, MAX, subquery.
+Expected: Order ID O003, Student ID S003, Service ID SV003, amount 240
 """
 
 from db import get_driver

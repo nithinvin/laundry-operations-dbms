@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Run a Cypher file from the cypher/ folder and print the results as tables.
-# Usage: ./scripts/run_cypher.sh 03_queries.cypher
+# Run a Cypher file from the cypher/ folder, one statement at a time, with a
+# title and description before each query.
+#
+# Usage: ./scripts/run_cypher.sh [--show] [--pause] FILE
+#   --show   also print the Cypher of each statement (to copy into Neo4j Browser)
+#   --pause  wait for Enter after each statement (q + Enter to stop)
+# Example: ./scripts/run_cypher.sh --show --pause 03_queries.cypher
 source "$(dirname "$0")/common.sh"
 
-if [[ $# -ne 1 || ! -f "cypher/$1" ]]; then
-  echo "Usage: $0 <file in cypher/>   e.g. $0 03_queries.cypher" >&2
-  exit 1
-fi
-docker exec -i "$CONTAINER" cypher-shell -u "$NEO4J_USER" -p "$NEO4J_PASSWORD" \
-  --format verbose -f "/cypher/$1" | grep -v '^ready to start consuming query'
+require_venv
+exec "$PYTHON" "$REPO_ROOT/python/run_cypher.py" "$@"

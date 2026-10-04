@@ -1,6 +1,8 @@
 """PL/SQL Q2 equivalent: total revenue from paid orders.
 
+Question: how much money has been collected from payments with status Paid?
 PL/SQL concepts shown: variable, SELECT ... INTO, SUM, NVL (coalesce in Cypher).
+Expected: Total Revenue from Paid Orders: 675
 """
 
 from db import get_driver

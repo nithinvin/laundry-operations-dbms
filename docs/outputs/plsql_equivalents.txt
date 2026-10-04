@@ -1,25 +1,89 @@
-=== Q1. Find order with highest total cost ===
+==============================================================================
+Q1. Find order with highest total cost
+Question: which order costs the most, and who placed it with which service?
+PL/SQL concepts shown: variables, SELECT ... INTO, MAX, subquery.
+Expected: Order ID O003, Student ID S003, Service ID SV003, amount 240
+Script: python/plsql_q1_highest_order.py
+==============================================================================
+Cypher:
+MATCH (o:LaundryOrder)
+WITH max(o.totalAmount) AS maxAmount
+MATCH (s:Student)-[:PLACED]->(o:LaundryOrder)-[:USES_SERVICE]->(sv:Service)
+WHERE o.totalAmount = maxAmount
+RETURN o.orderId AS orderId, s.studentId AS studentId,
+       sv.serviceId AS serviceId, o.totalAmount AS totalAmount;
+
+Output:
 Order ID: O003
 Student ID: S003
 Service ID: SV003
 Highest Total Amount: 240
 
-=== Q2. Calculate total revenue from paid orders ===
+==============================================================================
+Q2. Calculate total revenue from paid orders
+Question: how much money has been collected from payments with status Paid?
+PL/SQL concepts shown: variable, SELECT ... INTO, SUM, NVL (coalesce in Cypher).
+Expected: Total Revenue from Paid Orders: 675
+Script: python/plsql_q2_total_revenue.py
+==============================================================================
+Cypher:
+MATCH (p:Payment {paymentStatus: 'Paid'})
+RETURN coalesce(sum(p.amount), 0) AS revenue;
+
+Output:
 Total Revenue from Paid Orders: 675
 
-=== Q3. Display each student and order count ===
+==============================================================================
+Q3. Display each student and order count
+Question: how many orders has each student placed (including students with none)?
+PL/SQL concepts shown: cursor, FOR loop, LEFT JOIN (OPTIONAL MATCH), COUNT.
+Expected: 5 students, 1 order each
+Script: python/plsql_q3_student_orders.py
+==============================================================================
+Cypher:
+MATCH (s:Student)
+OPTIONAL MATCH (s)-[:PLACED]->(o:LaundryOrder)
+RETURN s.studentId AS studentId, s.studentName AS studentName, count(o) AS orderCount
+ORDER BY studentId;
+
+Output:
 Student: Nithin | Orders: 1
 Student: Arjun | Orders: 1
 Student: Rahul | Orders: 1
 Student: Karthik | Orders: 1
 Student: Aditya | Orders: 1
 
-=== Q4. Display pending laundry orders ===
+==============================================================================
+Q4. Display pending laundry orders
+Question: which orders have not been picked up yet, and by whom, with which service?
+PL/SQL concepts shown: cursor, FOR loop, multiple joins, filtering.
+Expected: O001, O002, O003, O005 (O004 is already picked up)
+Script: python/plsql_q4_pending_orders.py
+==============================================================================
+Cypher:
+MATCH (s:Student)-[:PLACED]->(o:LaundryOrder)-[:USES_SERVICE]->(sv:Service)
+WHERE o.status <> 'Picked Up'
+RETURN o.orderId AS orderId, s.studentName AS studentName,
+       sv.serviceName AS serviceName, o.status AS status
+ORDER BY o.orderId;
+
+Output:
 Order: O001 | Student: Nithin | Service: Normal Wash | Status: Ready for Pickup
 Order: O002 | Student: Arjun | Service: Wash and Iron | Status: Processing
 Order: O003 | Student: Rahul | Service: Dry Clean | Status: Queued
 Order: O005 | Student: Aditya | Service: Express Wash | Status: Received
 
-=== Q5. Check whether an order is ready for pickup ===
+==============================================================================
+Q5. Check whether an order is ready for pickup
+Question: is order O001 ready for the student to collect?
+PL/SQL concepts shown: SELECT ... INTO, IF-ELSE.
+Expected: Order O001 is ready for pickup.
+Script: python/plsql_q5_ready_check.py
+==============================================================================
+Cypher:
+:param orderId => 'O001';
+MATCH (o:LaundryOrder {orderId: $orderId}) RETURN o.status AS status;
+
+Output:
 Order O001 is ready for pickup.
 

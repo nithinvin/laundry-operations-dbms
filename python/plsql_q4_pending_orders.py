@@ -1,6 +1,8 @@
 """PL/SQL Q4 equivalent: display pending laundry orders.
 
+Question: which orders have not been picked up yet, and by whom, with which service?
 PL/SQL concepts shown: cursor, FOR loop, multiple joins, filtering.
+Expected: O001, O002, O003, O005 (O004 is already picked up)
 """
 
 from db import get_driver

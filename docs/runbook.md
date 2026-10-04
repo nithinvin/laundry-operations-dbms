@@ -172,22 +172,41 @@ prints the rows that break the rule.
 
 ## 7. Run the queries
 
-**Terminal: Cypher files**, printed as tables:
+**Terminal: Cypher files.** Each statement runs on its own, with a heading
+first. The heading shows the title, the question in plain English, the
+original Oracle SQL (for the A queries) and the expected result. Results are
+printed as a table.
 
 ```bash
 ./scripts/run_cypher.sh 03_queries.cypher     # 5 ported SQL queries
 ./scripts/run_cypher.sh 06_showcase.cypher    # graph showcase queries
 ```
 
-**Terminal: the PL/SQL equivalents:**
+| Option | Effect |
+|--------|--------|
+| `--show` | Also prints the Cypher of each statement, so you can copy it into Neo4j Browser |
+| `--pause` | Waits for **Enter** after each statement; type `q` + Enter to stop early |
+
+Options can be combined, and they go before the file name:
 
 ```bash
-.venv/bin/python python/run_plsql_equivalents.py     # all 5
-.venv/bin/python python/plsql_q5_ready_check.py O002 # one script, with an argument
+./scripts/run_cypher.sh --show --pause 03_queries.cypher    # one query at a time, with its Cypher
+./scripts/run_cypher.sh --show 05_workflow.cypher           # Browser-style :param lines also work (changes data!)
 ```
 
-Compare with [queries.md](queries.md) and `docs/outputs/`. (You can also run
-`source .venv/bin/activate` once, then use plain `python`.)
+**Terminal: the PL/SQL equivalents.** These take the same options. With
+`--show`, each script prints the Cypher it sends, plus a `:param` line where
+a parameter is needed, so the text can be pasted into Browser as it is.
+
+```bash
+.venv/bin/python python/run_plsql_equivalents.py                  # all 5
+.venv/bin/python python/run_plsql_equivalents.py --show --pause   # one at a time, with Cypher
+.venv/bin/python python/plsql_q5_ready_check.py O002              # one script, with an argument
+```
+
+Compare with [queries.md](queries.md) and `docs/outputs/`. Those outputs were
+generated with `--show`. (You can also run `source .venv/bin/activate` once,
+then use plain `python`.)
 
 **Neo4j Browser:**
 

@@ -8,11 +8,12 @@ were checked against the running database. The source files are:
 |------|------|--------------|
 | A. SQL queries | `cypher/03_queries.cypher` | [outputs/queries.txt](outputs/queries.txt) |
 | B. PL/SQL blocks | `python/plsql_q1_…py` … `plsql_q5_…py` | [outputs/plsql_equivalents.txt](outputs/plsql_equivalents.txt) |
-| C. Graph showcase | `cypher/06_showcase.cypher` | — |
+| C. Graph showcase | `cypher/06_showcase.cypher` | [outputs/showcase.txt](outputs/showcase.txt) |
 | D. Workflow | `cypher/05_workflow.cypher`, `python/workflow.py` | — |
 
 Run them with `./scripts/run_cypher.sh 03_queries.cypher` and
-`python python/run_plsql_equivalents.py`.
+`python python/run_plsql_equivalents.py`. Add `--show` to print each Cypher
+statement and `--pause` to step through one at a time (see runbook §7).
 
 Overall average order amount, used by Q2: (100 + 140 + 240 + 75 + 120) / 5 = **135**.
 

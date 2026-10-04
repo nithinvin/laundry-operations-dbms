@@ -1,0 +1,117 @@
+
+==============================================================================
+C1. Unread notifications per student
+Question: which students have notifications they have not read yet?
+Two hops, Student -> Order -> Notification. No stored Student-Notification
+link is needed (the Oracle BCNF decision is kept).
+Expected: Aditya [N008], Nithin [N003], Rahul [N005]
+==============================================================================
+Cypher:
+MATCH (s:Student)-[:PLACED]->(:LaundryOrder)-[:GENERATED]->(n:Notification {readStatus: 'Unread'})
+RETURN s.studentName AS student, collect(n.notificationId) AS unread
+ORDER BY student;
+
++---------+--------+
+| student | unread |
++---------+--------+
+| Aditya  | [N008] |
+| Nithin  | [N003] |
+| Rahul   | [N005] |
++---------+--------+
+3 rows
+
+==============================================================================
+C2. Whose laundry is queued on machine M001, in queue order?
+Question: whose laundry is waiting on machine M001, and in what order?
+Path Student -> Order -> QueueEntry -> Machine; in SQL this needs 3 joins.
+Expected: 1 O002 Arjun, 2 O003 Rahul
+==============================================================================
+Cypher:
+MATCH (s:Student)-[:PLACED]->(o:LaundryOrder)-[:IN_QUEUE]->(q:QueueEntry)-[:FOR_MACHINE]->(:Machine {machineId: 'M001'})
+RETURN q.queuePosition AS position, o.orderId AS orderId, s.studentName AS student
+ORDER BY position;
+
++----------+---------+---------+
+| position | orderId | student |
++----------+---------+---------+
+| 1        | O002    | Arjun   |
+| 2        | O003    | Rahul   |
++----------+---------+---------+
+2 rows
+
+==============================================================================
+C3. Students who send the same garment types (co-occurrence)
+Question: which pairs of students sent at least one garment type in common?
+A "people like you" pattern, as used in recommendation systems.
+Expected: Arjun-Aditya [Shirt], Nithin-Aditya [Shirt], Nithin-Arjun [Shirt], Nithin-Karthik [Pants]
+==============================================================================
+Cypher:
+MATCH (s1:Student)-[:PLACED]->(:LaundryOrder)-[:CONTAINS]->(g:GarmentType)
+      <-[:CONTAINS]-(:LaundryOrder)<-[:PLACED]-(s2:Student)
+WHERE s1.studentId < s2.studentId
+RETURN s1.studentName AS student1, s2.studentName AS student2,
+       collect(DISTINCT g.garmentName) AS sharedGarments
+ORDER BY student1, student2;
+
++----------+----------+----------------+
+| student1 | student2 | sharedGarments |
++----------+----------+----------------+
+| Arjun    | Aditya   | [Shirt]        |
+| Nithin   | Aditya   | [Shirt]        |
+| Nithin   | Arjun    | [Shirt]        |
+| Nithin   | Karthik  | [Pants]        |
++----------+----------+----------------+
+4 rows
+
+==============================================================================
+C4. Everything within two hops of order O001
+Question: show everything connected to order O001 (student, hostel, staff,
+service, garments, queue, machine, payment, notifications).
+Best viewed in Neo4j Browser's graph view (copy this query with --show).
+Expected: 15 paths
+==============================================================================
+Cypher:
+MATCH p = (o:LaundryOrder {orderId: 'O001'})-[*1..2]-()
+RETURN p;
+
++-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| p                                                                                                                                                     |
++-------------------------------------------------------------------------------------------------------------------------------------------------------+
+| (:LaundryOrder O001)<-[:PLACED]-(:Student S001)                                                                                                       |
+| (:LaundryOrder O001)<-[:PLACED]-(:Student S001)-[:LIVES_IN]->(:Hostel H001)                                                                           |
+| (:LaundryOrder O001)-[:USES_SERVICE]->(:Service SV001)                                                                                                |
+| (:LaundryOrder O001)<-[:ASSIGNED_TO]-(:Staff ST001)                                                                                                   |
+| (:LaundryOrder O001)-[:IN_QUEUE]->(:QueueEntry Q004)                                                                                                  |
+| (:LaundryOrder O001)-[:IN_QUEUE]->(:QueueEntry Q004)-[:FOR_MACHINE]->(:Machine M003)                                                                  |
+| (:LaundryOrder O001)-[:HAS_PAYMENT]->(:Payment P001)                                                                                                  |
+| (:LaundryOrder O001)-[:GENERATED]->(:Notification N001)                                                                                               |
+| (:LaundryOrder O001)-[:GENERATED]->(:Notification N002)                                                                                               |
+| (:LaundryOrder O001)-[:GENERATED]->(:Notification N003)                                                                                               |
+| (:LaundryOrder O001)-[:CONTAINS {unitPrice: 20.0, quantity: 2}]->(:GarmentType G002)                                                                  |
+| (:LaundryOrder O001)-[:CONTAINS {unitPrice: 20.0, quantity: 2}]->(:GarmentType G002)<-[:CONTAINS {unitPrice: 15.0, quantity: 5}]-(:LaundryOrder O004) |
+| (:LaundryOrder O001)-[:CONTAINS {unitPrice: 20.0, quantity: 3}]->(:GarmentType G001)                                                                  |
+| (:LaundryOrder O001)-[:CONTAINS {unitPrice: 20.0, quantity: 3}]->(:GarmentType G001)<-[:CONTAINS {unitPrice: 35.0, quantity: 2}]-(:LaundryOrder O002) |
+| (:LaundryOrder O001)-[:CONTAINS {unitPrice: 20.0, quantity: 3}]->(:GarmentType G001)<-[:CONTAINS {unitPrice: 40.0, quantity: 3}]-(:LaundryOrder O005) |
++-------------------------------------------------------------------------------------------------------------------------------------------------------+
+15 rows
+
+==============================================================================
+C5. Which hostels does each staff member serve? (three hops)
+Question: Staff -> Order <- Student -> Hostel, i.e. where each staff member's customers live.
+Expected: Anita [Block D], Priya [Block C], Ramesh [Block A], Suresh [Block B], Vijay [Block E]
+==============================================================================
+Cypher:
+MATCH (st:Staff)-[:ASSIGNED_TO]->(:LaundryOrder)<-[:PLACED]-(:Student)-[:LIVES_IN]->(h:Hostel)
+RETURN st.staffName AS staff, collect(DISTINCT h.hostelName) AS hostels
+ORDER BY staff;
+
++--------+------------------+
+| staff  | hostels          |
++--------+------------------+
+| Anita  | [Block D Hostel] |
+| Priya  | [Block C Hostel] |
+| Ramesh | [Block A Hostel] |
+| Suresh | [Block B Hostel] |
+| Vijay  | [Block E Hostel] |
++--------+------------------+
+5 rows
